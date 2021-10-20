@@ -1,0 +1,12 @@
+import ds/array;
+import runtime;
+import string;
+
+sum(array : [int]) -> int {
+    fold(array, 0, \x, y -> x+y);
+}
+
+main() {
+    intArray : [int] = [1,2,3];
+    println(i2s(sum(intArray)));
+}

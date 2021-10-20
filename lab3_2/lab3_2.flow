@@ -1,0 +1,28 @@
+import runtime;
+import string;
+import ds/array;
+
+fib(n:int) -> [int] {
+  if (n == 1) {
+    [0];
+  } else { 
+    if (n == 2) {
+      [0,1]
+    } else { 
+      fib_times(n-2,[0,1])
+      }
+  }
+}
+
+fib_times(n : int, array : [int]) -> [int] {
+  if (n == 0) array 
+  else {
+    fib_times(n-1, concat(array, [fold(subrange(array, length(array) - 2, 2),0, \x,y -> x+y)]));
+  }
+}
+
+main() {
+     n : int = 10;
+    println(map(fib(n), i2s));
+    
+}

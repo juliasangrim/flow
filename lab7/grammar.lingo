@@ -1,0 +1,8 @@
+S = sub | sum | mul | int | inv;
+sum = ws "(" ws S:l ws "+" ws S:r ws ")" ws { ArSum(:l, :r)};
+mul = ws "(" ws S:l ws "*" ws S:r ws ")" ws { ArMult(:l, :r)};
+sub = ws "(" ws S:l ws "-" ws S:r ws ")" ws { ArSub(:l, :r)};
+inv = ws "-" S:val ws {ArInv(:val)};
+int = digit+ $s { ArInt(s2i($s)) };
+digit = '0'-'9';
+ws = (' ' | '\t' | '\n' | '\r' )*;

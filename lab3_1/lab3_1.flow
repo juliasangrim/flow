@@ -1,0 +1,18 @@
+import runtime;
+import string;
+import ds/array;
+
+fib(n:int) -> [int] {
+    if (n == 1) {[0]} 
+    else {
+        if (n == 2) {[0,1]}
+        else {
+            concat(fib(n-1), [fold(subrange(fib(n-1), n-3, 2),0, \x,y -> x+y)]);
+        }
+    }
+}
+main() {
+     n : int = 10;
+    println(map(fib(n), i2s));
+    
+}

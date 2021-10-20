@@ -1,0 +1,21 @@
+import runtime;
+import string;
+import ds/array;
+
+fib(n:int) -> [int] {
+    if (n == 1) {[0]}
+    else {
+        if (n == 2) {[0,1]}
+        else {
+            array : ref [int] = ref(fib(n-1));
+            refArrayPush(array, fold(subrange(^array, length(^array) - 2, 2),0, \x,y -> x+y));
+            ^array;
+        }
+    }
+    
+}
+main() {
+    n : int = 10;
+    println(map(fib(n), i2s));
+    
+}

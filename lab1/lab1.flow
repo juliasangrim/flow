@@ -1,0 +1,15 @@
+import runtime;
+import string;
+import ds/array;
+// map, i2s, strGlue, println.
+
+printArr(array : [int]) -> void {
+    strArray = map(array, i2s);
+    println(strGlue(strArray, ";"));
+}
+
+main() {
+    intArray : [int] = [ 1, 2, 3];
+    printArr(intArray);
+}
+

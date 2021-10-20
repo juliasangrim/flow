@@ -1,0 +1,47 @@
+import lingo/pegcode/driver;
+import string;
+import ds/tree;
+import fs/filesystem;
+
+ArExpr ::= ArSum, ArMult, ArInt;
+ArSum(lhs : ArExpr, rhs : ArExpr);
+ArMult(lhs : ArExpr, rhs : ArExpr);
+ArInt(val : int);
+
+s2ar(str : string) -> ArExpr {
+	e_gr = "#include arith.lingo";
+	parsic(
+			compilePegGrammar(e_gr), 
+			str,
+	SemanticActions(setTree(defaultPegActions.t,
+     "createArInt", \s -> ArInt(s2i(s[0]))))
+	 );
+}
+
+ar2str(expr : ArExpr) -> string {
+	switch (expr) {
+		ArInt(val) : i2s(val);
+		ArSum(lhs, rhs) : concatStrings(["(", ar2str(lhs), "+", ar2str(rhs), ")"]);
+		ArMult(lhs, rhs) : concatStrings(["(", ar2str(lhs), "*", ar2str(rhs), ")"]);
+	}
+}
+
+calc(expr : ArExpr) -> int {
+	switch (expr) {
+		ArInt(val) : val;
+		ArSum(lhs, rhs) : calc(lhs) + calc(rhs);
+		ArMult(lhs, rhs) : calc(lhs) * calc(rhs);
+	}
+}
+
+main() {
+	s = getFileContent("test.txt");
+    tree = s2ar(s);
+	println("Expression to tree: ");
+    println(tree);
+	println("Tree to expression: ");
+	expression = ar2str(tree);
+	println(expression);
+	println("Claculate: ");
+	println(calc(tree));
+}
