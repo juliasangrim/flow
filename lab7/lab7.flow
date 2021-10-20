@@ -26,7 +26,7 @@ ar2str(expr : ArExpr) -> string {
 		ArSum(lhs, rhs) : concatStrings(["(", ar2str(lhs), "+", ar2str(rhs), ")"]);
 		ArMult(lhs, rhs) : concatStrings(["(", ar2str(lhs), "*", ar2str(rhs), ")"]);
 		ArSub(lhs, rhs) : concatStrings(["(", ar2str(lhs), "-", ar2str(rhs), ")"]);
-		ArInv(val) : concatStrings([" -", ar2str(val)]);
+		ArInv(val) : concatStrings(["-", ar2str(val)]);
 	}
 }
 
