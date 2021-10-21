@@ -3,15 +3,17 @@ import string;
 import ds/tree;
 import fs/filesystem;
 
-ArExpr ::= ArSum, ArMult, ArSub, ArInv, ArInt;
+ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar;
 ArSub(lhs : ArExpr, rhs : ArExpr);
 ArSum(lhs : ArExpr, rhs : ArExpr);
 ArMult(lhs : ArExpr, rhs : ArExpr);
+ArDiv(lhs : ArExpr, rhs : ArExpr);
 ArInv(val : ArExpr);
 ArInt(val : int);
+ArVar(val : string);
 
 s2ar(str : string) -> ArExpr {
-	e_gr = "#include D:/repo/flow/lab7/grammar.lingo";
+	e_gr = "#include D:/repo/flow9/lab7/grammar.lingo";
 	parsic(
 			compilePegGrammar(e_gr), 
 			str,
@@ -27,16 +29,18 @@ ar2str(expr : ArExpr) -> string {
 		ArMult(lhs, rhs) : concatStrings(["(", ar2str(lhs), "*", ar2str(rhs), ")"]);
 		ArSub(lhs, rhs) : concatStrings(["(", ar2str(lhs), "-", ar2str(rhs), ")"]);
 		ArInv(val) : concatStrings(["-", ar2str(val)]);
+		ArDiv(lhs, rhs) : concatStrings(["(", ar2str(lhs), "/", ar2str(rhs), ")"]);
 	}
 }
 
-calc(expr : ArExpr) -> int {
+calc(expr : ArExpr) -> double {
 	switch (expr) {
-		ArInt(val) : val;
+		ArInt(val) : i2d(val);
 		ArSum(lhs, rhs) : calc(lhs) + calc(rhs);
 		ArMult(lhs, rhs) : calc(lhs) * calc(rhs);
 		ArSub(lhs, rhs) : calc(lhs) - calc(rhs);
-		ArInv(val) : 0 - calc(val);
+		ArInv(val) : 0.0 - calc(val);
+		ArDiv(lhs, rhs) : calc(lhs) / calc(rhs);
 	}
 }
 
@@ -46,8 +50,9 @@ inf2RPN(expr : ArExpr) -> List<string> {
         ArInt(val) : makeList1(i2s(val));
         ArSum(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("+"));
         ArMult(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("*"));  
-		ArSub(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("-")); 
-		ArInv(val) :  concatList(inf2RPN(val), makeList1("-"));
+		ArSub(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("-"));
+		ArInv(val) : concatList(inf2RPN(val), makeList1("n")); 
+		ArDiv(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("/"));
     }
 
 }
@@ -70,36 +75,62 @@ RPN2ar(expr : List<string>) -> ArExpr {
 					ArSub(listAt(stack, 1, ArInt(0)), 
 						listAt(stack, 0, ArInt(0))), 
 					tailList(tailList(stack)));
+		} else if (i == "n") {
+			Cons(
+				ArInv(listAt(stack, 0, ArInt(0))),
+				tailList(stack));
+		}  else if (i == "/") {
+			Cons(
+					ArDiv(listAt(stack, 1, ArInt(0)), 
+						listAt(stack, 0, ArInt(0))), 
+					tailList(tailList(stack)));
 		} else {
 			Cons(ArInt(s2i(i)), stack);
 		}
 		}), 0, ArInt(0));
 }
 
-calcRPN(expr : List<string>) -> int {
+calcRPN(expr : List<string>) -> double {
 	listAt(
 	foldList(expr, makeList(), \stack, i -> {
 		if (i == "+") {
 				Cons(
-						listAt(stack, 1, 0) + listAt(stack, 0, 0), 
+						listAt(stack, 1, 0.0) + listAt(stack, 0, 0.0), 
 				tailList(tailList(stack)));
 		} else if (i == "*") {
 				Cons(
-						listAt(stack, 1, 0) * listAt(stack, 0, 0), 
+						listAt(stack, 1, 0.0) * listAt(stack, 0, 0.0), 
 					tailList(tailList(stack)));
-		}else if (i == "-") {
+		} else if (i == "-") {
 				Cons(
-						listAt(stack, 1, 0) - listAt(stack, 0, 0), 
+						listAt(stack, 1, 0.0) - listAt(stack, 0, 0.0), 
 					tailList(tailList(stack)));
+		} else if (i == "/") {
+				Cons(
+						listAt(stack, 1, 0.0) / listAt(stack, 0, 0.0), 
+					tailList(tailList(stack)));
+		} else if (i == "n") {
+			Cons(
+				0.0 - listAt(stack, 0, 0.0),
+				tailList(stack));
 		} else {
-			Cons(s2i(i), stack);
+			Cons(s2d(i), stack);
 		}
-		}), 0, 0);
+		}), 0, 0.0);
 	
 }
 
 printRPN(rpn : List<string>) -> void {
-	println(strGlue(list2array(rpn), " "));
+	foldList(rpn, makeList(), \stack, i -> {
+		if (i == "n") {
+			print("-");
+		} else { 
+			print(i);
+		}
+		print(" ");
+		tailList(stack);
+	});
+	print("\n");
 }
 
 
@@ -114,7 +145,7 @@ main() {
 	println(calc(tree));
     println("Inf to RPN: ");
     rpn = inf2RPN(tree);
-    printRPN(reverseList(rpn));
+    printRPN(rpn);
 	println("RPN to inf :");
     println(ar2str(RPN2ar(rpn)));
 	println("Resolve rpn form: ");
