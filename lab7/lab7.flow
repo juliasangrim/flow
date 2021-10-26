@@ -2,6 +2,8 @@ import lingo/pegcode/driver;
 import string;
 import ds/tree;
 import fs/filesystem;
+import ds/array;
+import maybe;
 
 ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar;
 ArSub(lhs : ArExpr, rhs : ArExpr);
@@ -30,17 +32,58 @@ ar2str(expr : ArExpr) -> string {
 		ArSub(lhs, rhs) : concatStrings(["(", ar2str(lhs), "-", ar2str(rhs), ")"]);
 		ArInv(val) : concatStrings(["-", ar2str(val)]);
 		ArDiv(lhs, rhs) : concatStrings(["(", ar2str(lhs), "/", ar2str(rhs), ")"]);
+		ArVar(val): val;
 	}
 }
 
-calc(expr : ArExpr) -> double {
+calc(expr : ArExpr, tree : Tree) -> Maybe<double> {
 	switch (expr) {
-		ArInt(val) : i2d(val);
-		ArSum(lhs, rhs) : calc(lhs) + calc(rhs);
-		ArMult(lhs, rhs) : calc(lhs) * calc(rhs);
-		ArSub(lhs, rhs) : calc(lhs) - calc(rhs);
-		ArInv(val) : 0.0 - calc(val);
-		ArDiv(lhs, rhs) : calc(lhs) / calc(rhs);
+		ArInt(val) : Some(i2d(val));
+		ArSum(lhs, rhs) : {
+			lhs1 = calc(lhs, tree);
+			rhs1 = calc(rhs, tree);
+			if (lhs1 == None() || rhs1 == None()) {
+				None();
+			} else {
+				Some(either(lhs1, 0.0) + either(rhs1, 0.0));
+			}
+		}
+		ArMult(lhs, rhs) : {
+			lhs1 = calc(lhs, tree);
+			rhs1 = calc(rhs, tree);
+			if (lhs1 == None() || rhs1 == None()) {
+				None();
+			} else {
+				Some(either(lhs1, 0.0) * either(rhs1, 0.0));
+			};
+		}
+		ArSub(lhs, rhs) : {
+			lhs1 = calc(lhs, tree);
+			rhs1 = calc(rhs, tree);
+			if (lhs1 == None() || rhs1 == None()) {
+				None();
+			} else {
+				Some(either(lhs1, 0.0) - either(rhs1, 0.0));
+			}
+		}
+		ArInv(val) : {
+			val1 = calc(val, tree);
+			if (val1 == None()) {
+				None();
+			} else {
+				Some(0.0 - either(val1, 0.0));
+			}
+		}
+		ArDiv(lhs, rhs) : {
+			lhs1 = calc(lhs, tree);
+			rhs1 = calc(rhs, tree);
+			if (lhs1 == None() || rhs1 == None() || either(rhs1, 0.0) == 0.0) {
+				None();
+			} else {
+				Some(either(calc(lhs, tree), 0.0) / either(calc(rhs, tree), 0.0));
+			}
+		}
+		ArVar(val): lookupTree(tree, val);
 	}
 }
 
@@ -53,7 +96,8 @@ inf2RPN(expr : ArExpr) -> List<string> {
 		ArSub(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("-"));
 		ArInv(val) : concatList(inf2RPN(val), makeList1("n")); 
 		ArDiv(lhs, rhs) : concatList(concatList(inf2RPN(lhs),  inf2RPN(rhs)), makeList1("/"));
-    }
+		ArVar(val) : makeList1(val);
+		}
 
 }
 
@@ -84,39 +128,74 @@ RPN2ar(expr : List<string>) -> ArExpr {
 					ArDiv(listAt(stack, 1, ArInt(0)), 
 						listAt(stack, 0, ArInt(0))), 
 					tailList(tailList(stack)));
-		} else {
+		} else if (isDouble(i) == false) {
+			Cons(ArVar(i), stack);
+		}
+		else {
 			Cons(ArInt(s2i(i)), stack);
 		}
 		}), 0, ArInt(0));
 }
 
-calcRPN(expr : List<string>) -> double {
+calcRPN(expr : List<string>, tree : Tree) -> Maybe<double> {
 	listAt(
 	foldList(expr, makeList(), \stack, i -> {
 		if (i == "+") {
-				Cons(
-						listAt(stack, 1, 0.0) + listAt(stack, 0, 0.0), 
+			lhs1 = listAt(stack, 1, None());
+			rhs1 = listAt(stack, 0, None());
+			if (lhs1 == None() || rhs1 == None()) {
+				Cons(None(),
 				tailList(tailList(stack)));
+			} else {
+				Cons(Some(either(lhs1, 0.0) + either(rhs1, 0.0)),
+				tailList(tailList(stack)));
+			}
 		} else if (i == "*") {
-				Cons(
-						listAt(stack, 1, 0.0) * listAt(stack, 0, 0.0), 
-					tailList(tailList(stack)));
+			lhs1 = listAt(stack, 1, None());
+			rhs1 = listAt(stack, 0, None());
+			if (lhs1 == None() || rhs1 == None()) {
+				Cons(None(),
+				tailList(tailList(stack)));
+			} else {
+				Cons(Some(either(lhs1, 0.0) * either(rhs1, 0.0)),
+				tailList(tailList(stack)));
+			}
 		} else if (i == "-") {
-				Cons(
-						listAt(stack, 1, 0.0) - listAt(stack, 0, 0.0), 
-					tailList(tailList(stack)));
+			lhs1 = listAt(stack, 1, None());
+			rhs1 = listAt(stack, 0, None());
+			if (lhs1 == None() || rhs1 == None()) {
+				Cons(None(),
+				tailList(tailList(stack)));
+			} else {
+				Cons(Some(either(lhs1, 0.0) - either(rhs1, 0.0)),
+				tailList(tailList(stack)));
+			}
 		} else if (i == "/") {
-				Cons(
-						listAt(stack, 1, 0.0) / listAt(stack, 0, 0.0), 
-					tailList(tailList(stack)));
+			lhs1 = listAt(stack, 1, None());
+			rhs1 = listAt(stack, 0, None());
+			if (lhs1 == None() || rhs1 == None() || either(rhs1, 0.0) == 0.0) {
+				Cons(None(),
+				tailList(tailList(stack)));
+			} else {
+				Cons(Some(either(lhs1, 0.0) / either(rhs1, 0.0)),
+				tailList(tailList(stack)));
+			}
 		} else if (i == "n") {
-			Cons(
-				0.0 - listAt(stack, 0, 0.0),
+			val = listAt(stack, 0, None());
+			if (val == None()) {
+				Cons(None(),
+				tailList(tailList(stack)));
+			} else {
+				Cons(Some(0.0 - either(val, 0.0)),
 				tailList(stack));
-		} else {
-			Cons(s2d(i), stack);
+			}
+		} else if (isDouble(i) == false) {
+			Cons(lookupTree(tree, i), stack);
 		}
-		}), 0, 0.0);
+		else {
+			Cons(Some(s2d(i)), stack);
+		}
+		}), 0, None());
 	
 }
 
@@ -135,19 +214,35 @@ printRPN(rpn : List<string>) -> void {
 
 
 main() {
+	//todo add variables
 	s = getFileContent("test.txt");
     tree = s2ar(s);
+	var = fold(getAllUrlParametersArray(), makeTree(), \tree1, array -> {
+			setTree(tree1, array[0], s2d(array[1]));
+	});
 	println("Expression: ");
 	println(s);
 	println("Expression to tree: ");
     println(tree);
 	println("Resolve inf form: ");
-	println(calc(tree));
+	res = calc(tree, var);
+	if (res == None()) {
+		println("Devision by 0 or no such variable");
+	} 
+	else {
+		println(either(res, 0.0));
+	}
     println("Inf to RPN: ");
     rpn = inf2RPN(tree);
     printRPN(rpn);
 	println("RPN to inf :");
     println(ar2str(RPN2ar(rpn)));
 	println("Resolve rpn form: ");
-	println(calcRPN(rpn));
+	resRPN = calcRPN(rpn, var);
+	if (resRPN == None()) {
+		println("Devision by 0 or no such variable");
+	} 
+	else {
+		println(either(resRPN, 0.0));
+	}
 }
