@@ -1,0 +1,110 @@
+import lingo/pegcode/driver;
+import string;
+import ds/tree;
+import fs/filesystem;
+import ds/array;
+import maybe;
+import ds/tuples;
+import math/math;
+
+ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
+ArSub(lhs : ArExpr, rhs : ArExpr);
+ArSum(lhs : ArExpr, rhs : ArExpr);
+ArMult(lhs : ArExpr, rhs : ArExpr);
+ArDiv(lhs : ArExpr, rhs : ArExpr);
+ArRat(lhs :int, rhs : int);
+ArInv(val : ArExpr);
+ArInt(val : int);
+ArVar(val : string);
+
+s2ar(str : string) -> ArExpr {
+	e_gr = "#include D:/repo/flow9/lab8/grammar.lingo";
+	parsic(
+			compilePegGrammar(e_gr), 
+			str,
+	SemanticActions(setTree(defaultPegActions.t,
+     "createArInt", \s -> ArInt(s2i(s[0]))))
+	 );
+}
+
+ar2str(expr : ArExpr) -> string {
+	switch (expr) {
+		ArInt(val) : i2s(val);
+		ArSum(lhs, rhs) : concatStrings(["(", ar2str(lhs), "+", ar2str(rhs), ")"]);
+		ArMult(lhs, rhs) : concatStrings(["(", ar2str(lhs), "*", ar2str(rhs), ")"]);
+		ArSub(lhs, rhs) : concatStrings(["(", ar2str(lhs), "-", ar2str(rhs), ")"]);
+		ArInv(val) : concatStrings(["-", ar2str(val)]);
+		ArDiv(lhs, rhs) : concatStrings(["(", ar2str(lhs), "/", ar2str(rhs), ")"]);
+		ArRat(lhs, rhs) : concatStrings([i2s(lhs), "/", i2s(rhs)]);
+		ArVar(val): val;
+	}
+}
+
+
+derivative(expr: ArExpr, var : string) -> ArExpr {
+    switch (expr) {
+		ArInt(val) : ArInt(0);
+		ArSum(lhs, rhs) : {
+            ArSum(derivative(lhs, var), derivative(rhs, var));
+        }
+		ArMult(lhs, rhs) : {
+            ArSum(ArMult(derivative(lhs, var), rhs), ArMult(lhs, derivative(rhs, var)));
+        }
+		ArSub(lhs, rhs) : {
+            ArSub(derivative(lhs, var), derivative(rhs, var))
+        }
+		ArInv(val) : {
+            ArInv(derivative(val, var));
+        }
+		ArDiv(lhs, rhs) : {
+            ArDiv(
+                ArSub(
+                ArMult(derivative(lhs, var), rhs), 
+                ArMult(lhs, derivative(rhs, var))
+                ),
+             ArMult(rhs, rhs)
+             );
+        }
+		ArRat(lhs, rhs) : {
+            ArInt(0);
+        }
+		ArVar(val): {
+            if (val == var) {
+                ArInt(1);
+            } else {
+                ArInt(0);
+            }
+        }
+	}
+}
+
+simpleDerivative(expr : ArExpr) -> ArExpr {
+    switch (expr) {
+        
+    }
+}
+
+printRes(res : Pair<int,int>) -> void {
+	if (firstOfPair(res) % secondOfPair(res) == 0) {
+		println(firstOfPair(res) / secondOfPair(res));
+	} else if (secondOfPair(res) < 0 && firstOfPair(res) > 0) {
+		println(concatStrings(["-", i2s(firstOfPair(res)), "/", i2s(iabs(secondOfPair(res)))]));
+	} else if (firstOfPair(res) < 0 && secondOfPair(res) < 0) {
+		println(concatStrings([i2s(iabs(firstOfPair(res))), "/", i2s(iabs(secondOfPair(res)))]));
+	} else {
+		println(concatStrings([i2s(firstOfPair(res)), "/", i2s(secondOfPair(res))]));
+	}
+}
+
+main() {
+	s = getFileContent("test.txt");
+    tree = s2ar(s);
+	var = "b";
+	println("Expression: ");
+	println(s);
+	println("Expression to tree: ");
+    println(tree);
+	println("Derivative: ");
+	res = derivative(tree, var);
+    println(ar2str(res));
+}
