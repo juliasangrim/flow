@@ -78,11 +78,12 @@ derivative(expr: ArExpr, var : string) -> ArExpr {
 	}
 }
 
-// simpleDerivative(expr : ArExpr) -> ArExpr {
+// simpleDerivative(expr : ArExpr) -> Maybe<ArExpr> {
 //     switch (expr) {
 //         ArInt(val) : {
-
+//             ArInt(val);
 //         }
+//         ArRat()
 //     }
 // }
 

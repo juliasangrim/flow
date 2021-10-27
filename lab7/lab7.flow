@@ -40,6 +40,26 @@ ar2str(expr : ArExpr) -> string {
 	}
 }
 
+doSimple(rat : Pair<int,int>) -> Pair<int,int> {
+	if (firstOfPair(rat) % secondOfPair(rat) == 0) {
+		Pair(firstOfPair(rat) / secondOfPair(rat) , 1);
+	} else {
+		rat;
+	}
+}
+
+doNormalRat(rat : Pair<int,int>) -> Pair<int,int> {
+	if (firstOfPair(rat) < 0 && secondOfPair(rat) < 0) {
+		rat1 = Pair(iabs(firstOfPair(rat)), iabs(secondOfPair(rat)));
+		doSimple(rat1);
+	} else if (firstOfPair(rat) > 0 && secondOfPair(rat) < 0) {
+		rat1 = Pair(0 - firstOfPair(rat), iabs(secondOfPair(rat)));
+		doSimple(rat1);
+	} else {
+		doSimple(rat);
+	}
+}
+
 calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 	switch (expr) {
 		ArInt(val) : Some(Pair(val, 1));
@@ -49,12 +69,14 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 			if (lhs1 == None() || rhs1 == None()) {
 				None();
 			} else {
-				tmpLhs = either(lhs1, Pair(0,0));
-				tmpRhs = either(rhs1, Pair(0,0));
-				if ( secondOfPair(tmpLhs) ==  secondOfPair(tmpRhs)) {
+				tmpLhs = doNormalRat(either(lhs1, Pair(0,0)));
+				tmpRhs = doNormalRat(either(rhs1, Pair(0,0)));
+				println(tmpRhs);
+				println(tmpLhs);
+				if (secondOfPair(tmpLhs) ==  secondOfPair(tmpRhs)) {
 					Some(Pair(firstOfPair(tmpLhs) + firstOfPair(tmpRhs), secondOfPair(tmpRhs)));
 				} else {
-					Some(Pair(firstOfPair(tmpLhs) * secondOfPair(tmpRhs) + firstOfPair(tmpRhs) * secondOfPair(tmpRhs),
+					Some(Pair(firstOfPair(tmpLhs) * secondOfPair(tmpRhs) + firstOfPair(tmpRhs) * secondOfPair(tmpLhs),
 					 secondOfPair(tmpRhs) * secondOfPair(tmpLhs)));
 				}
 			}
@@ -65,8 +87,8 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 			if (lhs1 == None() || rhs1 == None()) {
 				None();
 			} else {
-				tmpLhs = either(lhs1, Pair(0,0));
-				tmpRhs = either(rhs1, Pair(0,0));
+				tmpLhs = doNormalRat(either(lhs1, Pair(0,0)));
+				tmpRhs = doNormalRat(either(rhs1, Pair(0,0)));
 				Some(Pair(firstOfPair(tmpLhs) * firstOfPair(tmpRhs), secondOfPair(tmpLhs) *  secondOfPair(tmpRhs)));
 			};
 		}
@@ -76,12 +98,12 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 			if (lhs1 == None() || rhs1 == None()) {
 				None();
 			} else {
-				tmpLhs = either(lhs1, Pair(0,0));
-				tmpRhs = either(rhs1, Pair(0,0));
+				tmpLhs = doNormalRat(either(lhs1, Pair(0,0)));
+				tmpRhs = doNormalRat(either(rhs1, Pair(0,0)));
 				if ( secondOfPair(tmpLhs) ==  secondOfPair(tmpRhs)) {
 					Some(Pair(firstOfPair(tmpLhs) - firstOfPair(tmpRhs), secondOfPair(tmpRhs)));
 				} else {
-					Some(Pair(firstOfPair(tmpLhs) * secondOfPair(tmpRhs) - firstOfPair(tmpRhs) * secondOfPair(tmpRhs),
+					Some(Pair(firstOfPair(tmpLhs) * secondOfPair(tmpRhs) - firstOfPair(tmpRhs) * secondOfPair(tmpLhs),
 					 secondOfPair(tmpRhs) * secondOfPair(tmpLhs)));
 				}
 			}
@@ -91,8 +113,8 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 			if (val1 == None()) {
 				None();
 			} else {
-				tmpVal = either(val1, Pair(0,0));
-				Some(Pair(isign(firstOfPair(tmpVal)), secondOfPair(tmpVal)));
+				tmpVal = doNormalRat(either(val1, Pair(0,0)));
+				Some(Pair(0 - firstOfPair(tmpVal), secondOfPair(tmpVal)));
 			}
 		}
 		ArRat(lhs, rhs) : { 
@@ -105,8 +127,8 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 		ArDiv(lhs, rhs) : {
 			lhs1 = calc(lhs, tree);
 			rhs1 = calc(rhs, tree);
-			tmpLhs = either(lhs1, Pair(0,0));
-			tmpRhs = either(rhs1, Pair(0,0));
+			tmpLhs = doNormalRat(either(lhs1, Pair(0,0)));
+			tmpRhs = doNormalRat(either(rhs1, Pair(0,0)));
 			if (lhs1 == None() || rhs1 == None() || secondOfPair(tmpLhs) == 0 ||  firstOfPair(tmpRhs) == 0 ) {
 				None();
 			} else {
@@ -126,10 +148,6 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 printRes(res : Pair<int,int>) -> void {
 	if (firstOfPair(res) % secondOfPair(res) == 0) {
 		println(firstOfPair(res) / secondOfPair(res));
-	} else if (secondOfPair(res) < 0 && firstOfPair(res) > 0) {
-		println(concatStrings(["-", i2s(firstOfPair(res)), "/", i2s(iabs(secondOfPair(res)))]));
-	} else if (firstOfPair(res) < 0 && secondOfPair(res) < 0) {
-		println(concatStrings([i2s(iabs(firstOfPair(res))), "/", i2s(iabs(secondOfPair(res)))]));
 	} else {
 		println(concatStrings([i2s(firstOfPair(res)), "/", i2s(secondOfPair(res))]));
 	}
