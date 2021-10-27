@@ -7,12 +7,12 @@ import maybe;
 import ds/tuples;
 import math/math;
 
-ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
+ArExpr ::= ArSum, ArMult, ArSub, ArRat, ArDiv, ArInv, ArInt, ArVar;
 ArSub(lhs : ArExpr, rhs : ArExpr);
 ArSum(lhs : ArExpr, rhs : ArExpr);
 ArMult(lhs : ArExpr, rhs : ArExpr);
-ArDiv(lhs : ArExpr, rhs : ArExpr);
 ArRat(lhs :int, rhs : int);
+ArDiv(lhs : ArExpr, rhs : ArExpr);
 ArInv(val : ArExpr);
 ArInt(val : int);
 ArVar(val : string);

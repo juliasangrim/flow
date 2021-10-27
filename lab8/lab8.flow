@@ -78,11 +78,13 @@ derivative(expr: ArExpr, var : string) -> ArExpr {
 	}
 }
 
-simpleDerivative(expr : ArExpr) -> ArExpr {
-    switch (expr) {
-        
-    }
-}
+// simpleDerivative(expr : ArExpr) -> ArExpr {
+//     switch (expr) {
+//         ArInt(val) : {
+
+//         }
+//     }
+// }
 
 printRes(res : Pair<int,int>) -> void {
 	if (firstOfPair(res) % secondOfPair(res) == 0) {
