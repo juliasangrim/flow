@@ -1,12 +1,14 @@
-S = sub | sum | mul | int | inv | div | var;
+S = sub | sum | mul | int | rat | inv | div | var;
 sum = ws "(" ws S:l ws "+" ws S:r ws ")" ws { ArSum(:l, :r)};
 mul = ws "(" ws S:l ws "*" ws S:r ws ")" ws { ArMult(:l, :r)};
 sub = ws "(" ws S:l ws "-" ws S:r ws ")" ws { ArSub(:l, :r)};
+rat = ws "(" ws int$n ws "/" ws int$d ws ")" ws {ArRat(s2i($n), s2i($d))};
 div =  ws "(" ws S:l ws "/" ws S:r ws ")" ws { ArDiv(:l, :r)};
 inv = ws "-" S:val ws {ArInv(:val)};
 
 int = digit+ $s { ArInt(s2i($s)) };
 digit = '0'-'9';
+
 
 var = letter+ $s { ArVar($s)};
 letter = 'a'-'z';

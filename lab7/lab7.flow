@@ -7,12 +7,12 @@ import maybe;
 import ds/tuples;
 import math/math;
 
-ArExpr ::= ArSum, ArMult, ArSub, ArRat, ArDiv, ArInv, ArInt, ArVar;
+ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
 ArSub(lhs : ArExpr, rhs : ArExpr);
 ArSum(lhs : ArExpr, rhs : ArExpr);
 ArMult(lhs : ArExpr, rhs : ArExpr);
-ArRat(lhs :int, rhs : int);
 ArDiv(lhs : ArExpr, rhs : ArExpr);
+ArRat(lhs :int, rhs : int);
 ArInv(val : ArExpr);
 ArInt(val : int);
 ArVar(val : string);
@@ -151,7 +151,6 @@ main() {
 		println("Devision by 0 or no such variable");
 	} 
 	else {
-		println(res);
 		printRes(either(res, Pair(0,0)));
 	}
 }
