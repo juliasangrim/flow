@@ -60,7 +60,7 @@ doNormalRat(rat : Pair<int,int>) -> Pair<int,int> {
 	}
 }
 
-calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
+calc(expr : ArExpr, tree : Tree<string, ArExpr>) -> Maybe<Pair<int,int>> {
 	switch (expr) {
 		ArInt(val) : Some(Pair(val, 1));
 		ArSum(lhs, rhs) : {
@@ -71,8 +71,6 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 			} else {
 				tmpLhs = doNormalRat(either(lhs1, Pair(0,0)));
 				tmpRhs = doNormalRat(either(rhs1, Pair(0,0)));
-				println(tmpRhs);
-				println(tmpLhs);
 				if (secondOfPair(tmpLhs) ==  secondOfPair(tmpRhs)) {
 					Some(Pair(firstOfPair(tmpLhs) + firstOfPair(tmpRhs), secondOfPair(tmpRhs)));
 				} else {
@@ -120,7 +118,7 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 		ArRat(lhs, rhs) : { 
 			if (rhs != 0) {
 				Some(Pair(lhs, rhs));
-			} else {
+			}  else {
 				None();
 			}
 		}
@@ -136,29 +134,43 @@ calc(expr : ArExpr, tree : Tree) -> Maybe<Pair<int,int>> {
 			}
 		}
 		ArVar(val): {
-			val1 = lookupTree(tree, val);
-			if (val1 == None()) {
-				None()
+			val_tree = lookupTree(tree, val);
+			if (val_tree == None()) {
+				None();
 			} else {
-				Some(Pair(either(val1, 0), 1));
+				val_tmp = either(val_tree, ArInt(0));
+				switch (val_tmp) {
+					ArInt(val1): {
+						Some(Pair(val1, 1));
+					}
+					ArRat(l,r) : {
+						Some(Pair(l, r));
+					}
+					default : None();
+				}
 			}
 		}
 	}
 }
+
 printRes(res : Pair<int,int>) -> void {
 	if (firstOfPair(res) % secondOfPair(res) == 0) {
 		println(firstOfPair(res) / secondOfPair(res));
 	} else {
-		println(concatStrings([i2s(firstOfPair(res)), "/", i2s(secondOfPair(res))]));
-	}
+		l = firstOfPair(res) / gcd(secondOfPair(res), firstOfPair(res));
+		r = secondOfPair(res) / gcd(secondOfPair(res), firstOfPair(res));
+		if (r < 0 && l > 0) {
+			println(concatStrings([i2s(0 - l), "/", i2s(iabs(r))]));
+		} else if (r < 0 && l < 0) {
+			println(concatStrings([i2s(iabs(l)), "/", i2s(iabs(r))]));
+		} else println(concatStrings([i2s(l), "/", i2s(r)]));
+	} 
 }
 
 main() {
 	s = getFileContent("test.txt");
     tree = s2ar(s);
-	var = fold(getAllUrlParametersArray(), makeTree(), \tree1, array -> {
-			setTree(tree1, array[0], s2i(array[1]));
-	});
+	var = setTree(makeTree(), "x", ArRat(2,3));
 	println("Expression: ");
 	println(s);
 	println("Expression to tree: ");

@@ -355,5 +355,6 @@ main() {
 	println("Derivative: ");
 	res = derivative(tree, var);
     println(ar2str(res));
+	println("Simplify derivative: ");
 	println(ar2str(simplifyDerivative(res)));
 }
