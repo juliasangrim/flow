@@ -1,0 +1,419 @@
+import lingo/pegcode/driver;
+import string;
+import ds/tree;
+import fs/filesystem;
+import ds/array;
+import maybe;
+import ds/tuples;
+import math/math;
+
+ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
+ArSub(lhs : ArExpr, rhs : ArExpr);
+ArSum(lhs : ArExpr, rhs : ArExpr);
+ArMult(lhs : ArExpr, rhs : ArExpr);
+ArDiv(lhs : ArExpr, rhs : ArExpr);
+ArRat(lhs :int, rhs : int);
+ArInv(val : ArExpr);
+ArInt(val : int);
+ArVar(val : string);
+
+Monom(monom : Tree<string, int>);
+Polinom(monoms : Tree<Monom, int>);
+RatExpr(lhs : Polinom, rhs : Polinom);
+
+s2ar(str : string) -> ArExpr {
+	e_gr = "#include D:/repo/flow9/lab9/grammar.lingo";
+	parsic(
+			compilePegGrammar(e_gr), 
+			str,
+	SemanticActions(setTree(defaultPegActions.t,
+     "createArInt", \s -> ArInt(s2i(s[0]))))
+	 );
+}
+
+ar2str(expr : ArExpr) -> string {
+	switch (expr) {
+		ArInt(val) : i2s(val);
+		ArSum(lhs, rhs) : concatStrings(["(", ar2str(lhs), " + ", ar2str(rhs), ")"]);
+		ArMult(lhs, rhs) : concatStrings(["(", ar2str(lhs), " * ", ar2str(rhs), ")"]);
+		ArSub(lhs, rhs) : concatStrings(["(", ar2str(lhs), " - ", ar2str(rhs), ")"]);
+		ArInv(val) : concatStrings(["-", ar2str(val)]);
+		ArDiv(lhs, rhs) : concatStrings(["(", ar2str(lhs), " / ", ar2str(rhs), ")"]);
+		ArRat(lhs, rhs) : concatStrings([i2s(lhs), "/", i2s(rhs)]);
+		ArVar(val): val;
+	}
+}
+
+simplifyRat(l : int, r : int) -> ArExpr {
+	if (r % l == 0) {
+		ArInt(r/l);
+	} else if (l == 0) {
+		ArInt(0);
+	}
+	else {
+		ArRat(l, r);
+	}		
+}
+
+simplifySum(l : ArExpr, r : ArExpr) -> ArExpr {
+	switch (l: ArExpr) {
+		ArInt(val_l): {
+			switch (r : ArExpr) {
+				ArInt(val_r): {
+					if (val_l != 0 && val_r != 0) {
+						ArSum(l, r);
+					} else if (val_l != 0) {
+						l;
+					} else {
+						r;
+					}
+				}
+				ArInv(val_r): {
+					ArSub(l ,r);
+				}
+				default: {
+					if (val_l != 0) {
+						ArSum(l, r);
+					} else {
+						r;
+					}
+				}
+			}
+		}
+		default: {
+			switch (r : ArExpr) {
+				ArInt(val): {
+					if (val != 0) {
+						ArSum(l, r);
+					} else l;
+				}
+				ArInv(val_r): {
+					ArSub(l ,r);
+				}
+				default: {
+					ArSum(l, r);
+				}
+			}
+
+		}
+	}
+}
+
+simplifySub(l : ArExpr, r : ArExpr) {
+	switch (l: ArExpr) {
+		ArInt(val_l): {
+			switch (r : ArExpr) {
+				ArInt(val_r): {
+					if (val_l != 0 && val_r != 0) {
+						ArSub(l, r);
+					} else if (val_l != 0) {
+						l;
+					} else {
+						ArInt(0 - val_r);
+					}
+				}
+				ArInv(val_r) : ArSum(l, r);
+				default: {
+					if (val_l != 0) {
+						ArSub(l, r);
+					} else {
+						ArInv(r);
+					}
+				}
+			}
+		}
+		default: {
+			switch (r : ArExpr) {
+				ArInt(val): {
+					if (val != 0) {
+						ArSub(l, r);
+					} else l;
+				}
+				ArInv(val_r): ArSum(l, r);
+				default: {
+					ArSub(l, r);
+				}
+			}
+
+		}
+	}
+}
+
+simplifyMult(l : ArExpr, r : ArExpr) {
+	switch (l: ArExpr) {
+		ArInt(val_l): {
+			switch (r : ArExpr) {
+				ArInt(val_r): {
+					if (val_l != 0 && val_r != 0) {
+						if (val_l == 1) {
+							r;
+						} else if (val_r == 1) {
+							l;
+						} else if (val_l == -1) {
+							ArInt(0 - val_r);
+						} else if (val_r == -1) {
+							ArInt(0 - val_l);
+						} else {
+							ArMult(l, r);
+						}
+					} else ArInt(0);
+				}
+				default: {
+					if (val_l != 0) {
+						if (val_l == 1) {
+							r;
+						} else if (val_l == -1) {
+							ArInv(r);
+						} else {
+							ArMult(l, r);
+						}
+					} else {
+						ArInt(0);
+					}
+				}
+			}
+		}
+		default: {
+			switch (r : ArExpr) {
+				ArInt(val): {
+					if (val != 0) {
+						if (val == 1) {
+							l;
+						} else if (val == -1) {
+							ArInv(l);
+						} else {
+							ArMult(l, r);
+						}
+					} else ArInt(0);
+				}
+				default: {
+					ArMult(l, r);
+				}
+			}
+
+		}
+	}
+}
+
+simplifyDiv(l : ArExpr, r : ArExpr) {
+	switch (l: ArExpr) {
+		ArInt(val_l): {
+			switch (r : ArExpr) {
+				ArInt(val_r): {
+					if (val_l != 0 && val_r != 0) {
+						if (val_r == 1) {
+							l;
+						} else if (val_r == -1) {
+							ArInt(0 - val_l);
+						} else {
+							ArDiv(l, r);
+						}
+					} else {
+						ArInt(0);
+					}
+				}
+				default: {
+					if (val_l != 0) {
+						ArDiv(l, r);
+					} else {
+						ArInt(0);
+					}
+				}
+			}
+		}
+		default: {
+			switch (r : ArExpr) {
+				ArInt(val): {
+					if (val != 0) {
+						if (val == 1) {
+							l;
+						} else if (val == -1) {
+							ArInv(l);
+						} else {
+							ArDiv(l, r);
+						}
+					} else ArInt(0);
+				}
+				default: {
+					ArDiv(l, r);
+				}
+			}
+
+		}
+	}
+}
+
+simplifyInv(val : ArExpr) {
+	switch (val : ArExpr) {
+		ArInt(val_l): {
+			if (val_l == 0) {
+				ArInt(0);
+			} else {
+				ArInt(0 - val_l);
+			}
+		}
+		default: {
+			ArInv(val);
+		}
+	}
+}
+
+
+
+simplifyDerivative(expr : ArExpr) -> ArExpr {
+    switch (expr) {
+        ArInt(val) : {
+            ArInt(val);
+        }
+        ArRat(lhs, rhs): {
+			simplifyRat(lhs, rhs);
+		}
+		ArVar(val) : {
+			ArVar(val)
+		}
+		ArSum(lhs, rhs): {
+			lhs_simple = simplifyDerivative(lhs);
+			rhs_simple = simplifyDerivative(rhs);
+			simplifySum(lhs_simple, rhs_simple);
+		}
+		ArSub(lhs, rhs): {
+			lhs_simple = simplifyDerivative(lhs);
+			rhs_simple = simplifyDerivative(rhs);
+			simplifySub(lhs_simple, rhs_simple);
+		}
+		ArMult(lhs, rhs): {
+			lhs_simple = simplifyDerivative(lhs);
+			rhs_simple = simplifyDerivative(rhs);
+			simplifyMult(lhs_simple, rhs_simple);
+		}
+		ArDiv(lhs, rhs): {
+			lhs_simple = simplifyDerivative(lhs);
+			rhs_simple = simplifyDerivative(rhs);
+			simplifyDiv(lhs_simple, rhs_simple);
+		}
+		ArInv(val) : {
+			val_simple = simplifyDerivative(val);
+			simplifyInv(val);
+		}
+    }
+}
+
+ar2RatExpr(expr : ArExpr) -> RatExpr {
+    switch (expr) {
+        ArInt(val): {
+            RatExpr(
+            Polinom(makeTree1(Monom(makeTree())), val), 
+            Polinom(makeTree1(Monom(makeTree())), 1)
+            );  
+        }
+        ArVar(val): {
+            RatExpr(
+            Polinom(makeTree1(Monom(makeTree1(val, 1)), 1), 
+            Polinom(makeTree1(Monom(makeTree()), 1))
+            );
+        }
+        ArRat(lhs, rhs): {
+            RatExpr(
+            Polinom(makeTree1(lhs, Monom(makeTree()))), 
+            Polinom(makeTree1(rhs, Monom(makeTree())))
+            );
+        }
+        ArSum(lhs, rhs): {
+			sumRat(ar2RatExpr(lhs), ar2RatExpr(rhs));
+        }
+        ArSub(lhs, rhs): {
+			subRat(ar2RatExpr(lhs), ar2RatExpr(rhs));
+        }
+        ArMul(lhs, rhs): {
+			multRat(ar2RatExpr(lhs), ar2RatExpr(rhs));
+        }
+        ArDiv(lhs, rhs): {
+			divRat(ar2RatExpr(lhs), ar2RatExpr(rhs));
+        }
+        ArInv(val): {
+			invRat(ar2RatExpr(val));
+        }
+    }
+}
+
+sumRat(expr_lhs : RatExpr, expr_rhs : RatExpr) -> RatExpr {
+	RatExpr(
+		sumPolinom(
+			multPolinom(expr_lhs.lhs, expr_rhs.rhs),
+			multPolinom(expr_rhs.lhs, expr_lhs.rhs)
+		), 
+		multPolinom(expr_lhs.rhs, expr_rhs.rhs)
+	);
+}
+
+subRat(expr_lhs : RatExpr, expr_rhs : RatExpr) -> RatExpr {
+	RatExpr(
+		subPolinom(
+			multPolinom(expr_lhs.lhs, expr_rhs.rhs),
+			multPolinom(expr_rhs.lhs, expr_lhs.rhs)
+		), 
+		multPolinom(expr_lhs.rhs, expr_rhs.rhs)
+	);
+}
+
+multRat(expr_lhs : RatExpr, expr_rhs : RatExpr) -> RatExpr {
+	RatExpr(
+		multPolinom(expr_lhs.lhs, expr_rhs.lhs), 
+		multPolinom(expr_lhs.rhs, expr_rhs.rhs)
+	);
+}
+divRat(expr : RatExpr) -> RatExpr {
+	RatExpr(
+		multPolinom(expr_lhs.lhs, expr_rhs.rhs), 
+		multPolinom(expr_lhs.rhs, expr_rhs.lhs)
+	);
+}
+
+invRat(expr : RatExpr) -> RatExpr {
+	 RatExpr(
+        Polinom(mapTree(expr.lhs.monoms, \monom -> -monom)),
+        expr.rhs
+    );
+}
+
+sumPolinom(lhs : Polinom, rhs : Polinom) -> Polinom {
+	Polinom(mergeTreeCustom(lhs.monoms, rhs.monoms, \k, coef_lhs, coef_rhs -> coef_lhs + coef_rhs));
+}
+
+subPolinom(lhs : Polinom, rhs : Polinov) -> Polinom {
+	Polinom(mergeTreeCustom(lhs.monoms, rhs.monoms, \k, coef_lhs, coef_rhs -> coef_lhs - coef_rhs));
+}
+
+multPolinom(lhs : Polinom, rhs : Polinom) -> Polinom {
+   foldTree(lhs.monoms, makeTree(), \monom_lhs, coef_lhs, lhs_acum -> {
+	   foldTree(rhs.monoms, lhs_acum, \monom_rhs, coef_rhs, rhs_acum -> {
+		   multMonom = Monom(mergeTreeCustom(monom_lhs.monom, monom_rhs.monom, \k, pow_lhs, pow_rhs -> pow_lhs + pow_rhs));
+		   result = lookupTree(rhs_acum, multMonom);
+		   result ?? setTree(rhs_acum, multmonom, result + coef_lhs * coef_rhs) : setTree(rhs_acum, multmonom, coef_lhs * coef_rhs);
+	   })
+	});
+}
+
+ratExpr2s(expr : RatExpr) -> string {
+
+}
+
+polinom2s(expr : Polinom) -> string {
+
+}
+
+monom2s(expr : Monom) -> string {
+	
+}
+
+main() {
+	s = getFileContent("lab9.txt");
+    tree = s2ar(s);
+	var = "x";
+	println("Expression: ");
+	println(s);
+	println("Expression to tree: ");
+    println(tree);
+	println(ar2str(simplifyDerivative(tree)));
+
+}
