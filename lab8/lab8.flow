@@ -228,7 +228,8 @@ simplifyMult(l : ArExpr, r : ArExpr) {
 		}
 	}
 }
-
+//not work properly
+//TODO: done with some and none for error
 simplifyDiv(l : ArExpr, r : ArExpr) {
 	switch (l: ArExpr) {
 		ArInt(val_l): {
