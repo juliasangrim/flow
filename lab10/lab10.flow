@@ -131,11 +131,11 @@ multPolinom(lhs : Polinom, rhs : Polinom) -> Polinom {
 
 
 simplifyRat(expr : RatExpr) -> RatExpr {
-	coef_arr = foldTree(expr.top.monoms, [], \monom_top, coef_top, top_acum -> {
+	coef_toparr = foldTree(expr.top.monoms, [], \monom_top, coef_top, top_acum -> {
 		concat(top_acum, [coef_top]);
-	   	foldTree(expr.bottom.monoms, top_acum, \monom_bottom, coef_bottom, bottom_acum -> {
+	});
+	coef_arr = foldTree(expr.bottom.monoms, coef_toparr, \monom_bottom, coef_bottom, bottom_acum -> {
 			concat(bottom_acum, [coef_bottom]);   
-	   })
 	});
 	gcd = gcdA(coef_arr);
 	if (gcd == 1) {
@@ -171,6 +171,8 @@ ratExpr2s(expression : RatExpr) -> string {
 	} else if (rhs == "-1") {
 		expr_inv = invRat(expr);
 		polinom2s(expr_inv.top);
+	} else if (rhs == lhs) {
+		"1"
 	} else concatStrings(["(", lhs, ")", " / ", "(", rhs, ")"]);
 }
 
