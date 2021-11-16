@@ -131,7 +131,6 @@ multPolinom(lhs : Polinom, rhs : Polinom) -> Polinom {
 
 
 ratExpr2s(expr : RatExpr) -> string {
-	println(expr);
 	lhs = polinom2s(expr.top);
 	rhs = polinom2s(expr.bottom);
 
@@ -144,15 +143,17 @@ ratExpr2s(expr : RatExpr) -> string {
 	} else if (rhs == "-1") {
 		expr_inv = invRat(expr);
 		polinom2s(expr_inv.top);
-	} else if (rhs == lhs) {
-		"1"
 	} else concatStrings(["(", lhs, ")", " / ", "(", rhs, ")"]);
 }
 
 polinom2s(expr : Polinom) -> string {
 	foldTree(expr.monoms, "", \monoms, coef, result -> {
 		if (result == "") {
-			monom2s(monoms, coef);	
+			if (coef >= 0) {
+        		 monom2s(monoms, coef);
+			} else {
+				concatStrings([ "-", monom2s(monoms, iabs(coef))]);
+			}
 		}
 		else {
 			mon = monom2s(monoms, coef);
@@ -170,6 +171,7 @@ polinom2s(expr : Polinom) -> string {
 }
 
 monom2s(expr : Monom, coef : int) -> string {
+
 	if (coef == 0) { 
 		"";
 	} else if (coef == 1) {
@@ -179,7 +181,7 @@ monom2s(expr : Monom, coef : int) -> string {
             		concatStrings([result, monom]);
         		} else {
             		concatStrings([result, monom, "^", "(", i2s(power), ")"]);
-					}	
+				}	
         	});
 		} else {
 			if (coef == 1) {
