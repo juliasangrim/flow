@@ -130,8 +130,35 @@ multPolinom(lhs : Polinom, rhs : Polinom) -> Polinom {
 }
 
 
-ratExpr2s(expr : RatExpr) -> string {
-	println(expr);
+simplifyRat(expr : RatExpr) -> RatExpr {
+	coef_arr = foldTree(expr.top.monoms, [], \monom_top, coef_top, top_acum -> {
+		concat(top_acum, [coef_top]);
+	   	foldTree(expr.bottom.monoms, top_acum, \monom_bottom, coef_bottom, bottom_acum -> {
+			concat(bottom_acum, [coef_bottom]);   
+	   })
+	});
+	gcd = gcdA(coef_arr);
+	if (gcd == 1) {
+		expr;
+	} else {
+		RatExpr( 
+			Polinom(
+				foldTree(expr.top.monoms, makeTree(), \monom_top, coef_top, top_acum -> {
+				setTree(top_acum, monom_top, coef_top / gcd);
+				})
+			),
+			Polinom(
+				foldTree(expr.bottom.monoms, makeTree(), \monom_bottom, coef_bottom, bottom_acum -> {
+				setTree(bottom_acum, monom_bottom, coef_bottom / gcd);  
+	  		})
+			)
+		)
+	}
+}
+
+
+ratExpr2s(expression : RatExpr) -> string {
+	expr = simplifyRat(expression);
 	lhs = polinom2s(expr.top);
 	rhs = polinom2s(expr.bottom);
 
@@ -144,15 +171,17 @@ ratExpr2s(expr : RatExpr) -> string {
 	} else if (rhs == "-1") {
 		expr_inv = invRat(expr);
 		polinom2s(expr_inv.top);
-	} else if (rhs == lhs) {
-		"1"
 	} else concatStrings(["(", lhs, ")", " / ", "(", rhs, ")"]);
 }
 
 polinom2s(expr : Polinom) -> string {
-	foldTree(expr.monoms, "", \monoms, coef, result -> {
+	foldRTree(expr.monoms, "", \monoms, coef, result -> {
 		if (result == "") {
-			monom2s(monoms, coef);	
+			if (coef >= 0) {
+        			 monom2s(monoms, coef);
+			} else {
+					concatStrings([ "-", monom2s(monoms, iabs(coef))]);
+			}
 		}
 		else {
 			mon = monom2s(monoms, coef);
@@ -174,7 +203,7 @@ monom2s(expr : Monom, coef : int) -> string {
 		"";
 	} else if (coef == 1) {
 		if (!isEmptyTree(expr.monom)) {
-			foldTree(expr.monom, "", \monom, power, result -> {
+			foldRTree(expr.monom, "", \monom, power, result -> {
            		if(power == 1) {
             		concatStrings([result, monom]);
         		} else {
@@ -182,14 +211,10 @@ monom2s(expr : Monom, coef : int) -> string {
 					}	
         	});
 		} else {
-			if (coef == 1) {
-				"1"
-			} else {
-				"-1"
-			}
+			"1"
 		}
 	} else {
-        foldTree(expr.monom, i2s(coef), \monom, power, result -> {
+        foldRTree(expr.monom, i2s(coef), \monom, power, result -> {
             if(power == 1) {
                 concatStrings([result, monom]);
             } else {
