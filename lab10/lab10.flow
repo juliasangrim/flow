@@ -177,7 +177,7 @@ ratExpr2s(expression : RatExpr) -> string {
 }
 
 polinom2s(expr : Polinom) -> string {
-	foldRTree(expr.monoms, "", \monoms, coef, result -> {
+	foldTree(expr.monoms, "", \monoms, coef, result -> {
 		if (result == "") {
 			if (coef >= 0) {
         			 monom2s(monoms, coef);
@@ -205,7 +205,7 @@ monom2s(expr : Monom, coef : int) -> string {
 		"";
 	} else if (coef == 1) {
 		if (!isEmptyTree(expr.monom)) {
-			foldRTree(expr.monom, "", \monom, power, result -> {
+			foldTree(expr.monom, "", \monom, power, result -> {
            		if(power == 1) {
             		concatStrings([result, monom]);
         		} else {
@@ -216,7 +216,7 @@ monom2s(expr : Monom, coef : int) -> string {
 			"1"
 		}
 	} else {
-        foldRTree(expr.monom, i2s(coef), \monom, power, result -> {
+        foldTree(expr.monom, i2s(coef), \monom, power, result -> {
             if(power == 1) {
                 concatStrings([result, monom]);
             } else {
