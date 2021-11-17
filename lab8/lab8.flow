@@ -95,7 +95,7 @@ simplifySum(l : ArExpr, r : ArExpr) -> ArExpr {
 			switch (r : ArExpr) {
 				ArInt(val_r): {
 					if (val_l != 0 && val_r != 0) {
-						ArSum(l, r);
+						ArInt(val_l + val_r)
 					} else if (val_l != 0) {
 						l;
 					} else {
@@ -139,13 +139,14 @@ simplifySub(l : ArExpr, r : ArExpr) {
 			switch (r : ArExpr) {
 				ArInt(val_r): {
 					if (val_l != 0 && val_r != 0) {
-						ArSub(l, r);
+						ArInt(val_l - val_r)
 					} else if (val_l != 0) {
 						l;
 					} else {
 						ArInt(0 - val_r);
 					}
 				}
+				//TODO check on ArInt val_r for return ArInt
 				ArInv(val_r) : ArSum(l, r);
 				default: {
 					if (val_l != 0) {
@@ -188,7 +189,7 @@ simplifyMult(l : ArExpr, r : ArExpr) {
 						} else if (val_r == -1) {
 							ArInt(0 - val_l);
 						} else {
-							ArMult(l, r);
+							ArInt(val_l * val_r)
 						}
 					} else ArInt(0);
 				}
@@ -241,6 +242,7 @@ simplifyDiv(l : ArExpr, r : ArExpr) {
 						} else if (val_r == -1) {
 							ArInt(0 - val_l);
 						} else {
+							//TODO check on mod == 0 for return int or ArRat
 							ArDiv(l, r);
 						}
 					} else {
