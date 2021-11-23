@@ -1,0 +1,41 @@
+prog = ws declaration*:decl state:stat {Program(:decl, :stat)};
+
+declaration = "var" ws var:val ws ":" type:t ";" ws{Declaration(:val, :t)};
+
+type = Int | Array;
+Int = ws "int" ws {TypeInt()};
+Array = ws "[" type:t "]" ws {TypeArray(:t)};
+
+state  = print | test | seq | choice | loop | assign;
+seqExec    = ws "{" ws state:s1 ";" ws state:s2 seqs*:seq "}" ws {ExecSeq(:s1, :s2, :seq)};
+seqs   = ws ";" ws state ws;
+choiceExec = ws "{" ws state:s1 "U" ws state:s2 chs*:seq "}" ws {ExecChoice(:s1, :s2, :seq)};
+chs    = ws "U" ws state ws;
+
+print  = ws "print" ws "(" ws S:val ")" ws {Print(:val)};
+assign = var:val ":=" ws S:val {Assign(:var, :val)};
+
+loop   = ws "*" ws state:l {Loop(:l)};
+while  = ws "while" ws "(" ws S:s1 cond$s ws expr:s2 ")" ws stat:state {While($s, :s1, :s2, :state)};
+
+test   = ws "(" ws S:s1 condition$s ws S:s2 ")" ws "?" ws {Test($s, :s1, :s2)};
+
+
+
+S = sub | sum | mul | int | rat | inv | div | var;
+sum = ws "(" ws S:l ws "+" ws S:r ws ")" ws {ArSum(:l, :r)};
+mul = ws "(" ws S:l ws "*" ws S:r ws ")" ws {ArMult(:l, :r)};
+sub = ws "(" ws S:l ws "-" ws S:r ws ")" ws {ArSub(:l, :r)};
+rat = ws "(" ws int$n ws "/" ws int$d ws ")" ws {ArRat(s2i($n), s2i($d))};
+div =  ws "(" ws S:l ws "/" ws S:r ws ")" ws {ArDiv(:l, :r)};
+inv = ws "-" S:val ws {ArInv(:val)};
+
+int = digit+ $s {ArInt(s2i($s))};
+digit = '0'-'9';
+
+
+var = letter+ $s {ArVar($s)};
+letter = 'a'-'z';
+condition   = "<" | ">" | "==" | "!=" | "<=" | ">=" ;
+
+ws = (' ' | '\t' | '\n' | '\r' )*;
