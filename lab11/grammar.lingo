@@ -1,24 +1,28 @@
-prog = ws declaration*:decl state:stat {Program(:decl, :stat)};
+program = ws declaration*:d ws body:b ws {Program(:d, :b)};
+declaration = "var" ws var:v ws ":" ws type:t ws ";" ws {Declaration(:v, :t)};
 
-declaration = "var" ws var:val ws ":" type:t ";" ws{Declaration(:val, :t)};
+type = integer | array;
+integer = ws "int" ws {TypeInt()};
+array = ws "[" ws type:t ws "]" ws {TypeArray(:t)};
 
-type = Int | Array;
-Int = ws "int" ws {TypeInt()};
-Array = ws "[" type:t "]" ws {TypeArray(:t)};
+body = exec | loop | assign | test | print | while | if | ifelse;
 
-state  = print | test | seq | choice | loop | assign;
-seqExec    = ws "{" ws state:s1 ";" ws state:s2 seqs*:seq "}" ws {ExecSeq(:s1, :s2, :seq)};
-seqs   = ws ";" ws state ws;
-choiceExec = ws "{" ws state:s1 "U" ws state:s2 chs*:seq "}" ws {ExecChoice(:s1, :s2, :seq)};
-chs    = ws "U" ws state ws;
+exec = choiceExecs | seqExecs;
+loop = "*" ws body:b {Loop(:b)};
+seqExecs = ws "{" ws body:b1 ";" ws body:b2 seqExec*:ss "}" ws {SeqExec(:b1, :b2, :ss)};
+seqExec = ws ";" ws body;
+choiceExecs = ws "{" ws body:b1 ws "U" ws body:b2 choiceExec*:ss "}" ws {ChoiceExec(:b1, :b2, :ss)};
+choiceExec = ws "U" ws body;
 
-print  = ws "print" ws "(" ws S:val ")" ws {Print(:val)};
-assign = var:val ":=" ws S:val {Assign(:var, :val)};
+assign = ws var:v ws ":=" ws expression:e ws {Assign(:v, :e)};
+print = ws "print(" ws expression:e ws ")" ws {Print(:e)};
 
-loop   = ws "*" ws state:l {Loop(:l)};
-while  = ws "while" ws "(" ws S:s1 cond$s ws expr:s2 ")" ws stat:state {While($s, :s1, :s2, :state)};
+test   = "(" ws expression:e1 condition$s ws expression:e2 ")" ws "?" ws {Test(:e1, $s, :e2)};
+while  = "while" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b {While(:e1, $s, :e2, :b)};
+ifelse = "if" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b1 "else" ws body:b2 {IfElse(:e1, $s, :e2, :b1, :b2)};
+if = "if" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b {If(:e1, $s, :e2, :b)};
 
-test   = ws "(" ws S:s1 condition$s ws S:s2 ")" ws "?" ws {Test($s, :s1, :s2)};
+expression = S;
 
 
 
@@ -36,6 +40,6 @@ digit = '0'-'9';
 
 var = letter+ $s {ArVar($s)};
 letter = 'a'-'z';
-condition   = "<" | ">" | "==" | "!=" | "<=" | ">=" ;
+condition   = "<" | ">" | "==" | "!=" | "<=" | ">=";
 
 ws = (' ' | '\t' | '\n' | '\r' )*;

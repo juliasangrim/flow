@@ -1,0 +1,64 @@
+import lingo/pegcode/driver;
+import string;
+import ds/tree;
+import fs/filesystem;
+import ds/array;
+import maybe;
+import ds/tuples;
+import math/math;
+
+
+Program(d : [Declaration], b : Body);
+Declaration(v : ArVar, t : VarType);
+
+VarType ::= TypeInt, TypeArray;
+TypeInt();
+TypeArray(t : VarType);
+
+ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
+ArSub(lhs : ArExpr, rhs : ArExpr);
+ArSum(lhs : ArExpr, rhs : ArExpr);
+ArMult(lhs : ArExpr, rhs : ArExpr);
+ArDiv(lhs : ArExpr, rhs : ArExpr);
+ArRat(lhs :int, rhs : int);
+ArInv(val : ArExpr);
+ArInt(val : int);
+ArVar(val : string);
+
+Body ::= Exec, Print, Assign, Loop, While, Test, If, IfElse;
+
+Exec ::= SeqExec, ChoiceExec;
+SeqExec(b : [Body]);
+ChoiceExec(b : [Body]);
+Print(e : ArExpr);
+Assign(v : ArVar, e : ArExpr);
+Loop(l : Body);
+While(e1 : ArExpr, s : string, e2: ArExpr, b : Body);
+Test(e1 : ArExpr, s : string, e2: ArExpr);
+IfElse(e1 : ArExpr, s : string, e2: ArExpr, b1 : Body, b2 : Body);
+If(e1 : ArExpr, s : string, e2: ArExpr, b : Body);
+
+
+s2ast(str : string) -> Program {
+  e_gr = "#include D:/repo/flow9/lab11/grammar.lingo";
+  parsic(
+    compilePegGrammar(e_gr), 
+    str,
+      SemanticActions(
+        mergeTree(defaultPegActions.t,
+          pairs2tree([
+            Pair("SeqExec", \s -> SeqExec(concat3([s[0]], [s[1]], s[2]))),
+            Pair("ChoiceExec", \s -> ChoiceExec(concat3([s[0]], [s[1]], s[2])))
+          ])
+        )
+     )
+  )
+}
+
+
+main() {
+	s = getFileContent("test0.nm");
+  println(s2ast(s));
+}
+
+
