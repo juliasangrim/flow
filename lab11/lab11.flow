@@ -8,9 +8,6 @@ import ds/tuples;
 import math/math;
 
 
-Program(d : [Declaration], b : Body);
-Declaration(v : ArVar, t : VarType);
-
 VarType ::= TypeInt, TypeArray;
 TypeInt();
 TypeArray(t : VarType);
@@ -25,18 +22,17 @@ ArInv(val : ArExpr);
 ArInt(val : int);
 ArVar(val : string);
 
-Body ::= Exec, Print, Assign, Loop, While, Test, If, IfElse;
-
-Exec ::= SeqExec, ChoiceExec;
-SeqExec(b : [Body]);
-ChoiceExec(b : [Body]);
+Body ::= SeqExec, ChoiceExec, Print, Assign, Loop, While, Test;
 Print(e : ArExpr);
 Assign(v : ArVar, e : ArExpr);
 Loop(l : Body);
 While(e1 : ArExpr, s : string, e2: ArExpr, b : Body);
 Test(e1 : ArExpr, s : string, e2: ArExpr);
-IfElse(e1 : ArExpr, s : string, e2: ArExpr, b1 : Body, b2 : Body);
-If(e1 : ArExpr, s : string, e2: ArExpr, b : Body);
+SeqExec(body : [Body]);
+ChoiceExec(body : [Body]);
+
+Program(d : [Declaration], b : Body);
+Declaration(v : ArVar, t : VarType);
 
 
 s2ast(str : string) -> Program {
@@ -47,8 +43,8 @@ s2ast(str : string) -> Program {
       SemanticActions(
         mergeTree(defaultPegActions.t,
           pairs2tree([
-            Pair("SeqExec", \s -> SeqExec(concat3([s[0]], [s[1]], s[2]))),
-            Pair("ChoiceExec", \s -> ChoiceExec(concat3([s[0]], [s[1]], s[2])))
+            Pair("create SeqExec", \s -> SeqExec(concat3([s[0]], [s[1]], s[2]))),
+            Pair("create ChoiceExec", \s -> ChoiceExec(concat3([s[0]], [s[1]], s[2])))
           ])
         )
      )

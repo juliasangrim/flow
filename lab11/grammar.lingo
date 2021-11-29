@@ -1,38 +1,30 @@
-program = ws declaration*:d ws body:b ws {Program(:d, :b)};
-declaration = "var" ws var:v ws ":" ws type:t ws ";" ws {Declaration(:v, :t)};
+program = ws declaration*:d body:b {Program(:d, :b)};
+declaration = "var" ws var:v ws ":" ws type:t ";" ws {Declaration(:v, :t)};
 
 type = integer | array;
-integer = ws "int" ws {TypeInt()};
-array = ws "[" ws type:t ws "]" ws {TypeArray(:t)};
+integer = "int" ws {TypeInt()};
+array = "[" ws type:t "]" ws {TypeArray(:t)};
 
-body = exec | loop | assign | test | print | while | if | ifelse;
-
-exec = choiceExecs | seqExecs;
+body = choiceExecs | seqExecs | loop | assign | test | print | while ;
 loop = "*" ws body:b {Loop(:b)};
-seqExecs = ws "{" ws body:b1 ";" ws body:b2 seqExec*:ss "}" ws {SeqExec(:b1, :b2, :ss)};
-seqExec = ws ";" ws body;
-choiceExecs = ws "{" ws body:b1 ws "U" ws body:b2 choiceExec*:ss "}" ws {ChoiceExec(:b1, :b2, :ss)};
-choiceExec = ws "U" ws body;
+seqExecs = "{" ws body:b1 ";" ws body:b2 seqExec*:ss "}" ws {SeqExec(:b1, :b2, :ss)};
+seqExec =  ";" ws body;
+choiceExecs = "{" ws body:b1 ws "U" ws body:b2 choiceExec*:ss "}" ws {ChoiceExec(:b1, :b2, :ss)};
+choiceExec = "U" ws body;
 
-assign = ws var:v ws ":=" ws expression:e ws {Assign(:v, :e)};
-print = ws "print(" ws expression:e ws ")" ws {Print(:e)};
+assign = var:v ws ":=" ws expression:e ws {Assign(:v, :e)};
+print = "print(" ws expression:e ws ")" ws {Print(:e)};
 
 test   = "(" ws expression:e1 condition$s ws expression:e2 ")" ws "?" ws {Test(:e1, $s, :e2)};
 while  = "while" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b {While(:e1, $s, :e2, :b)};
-ifelse = "if" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b1 "else" ws body:b2 {IfElse(:e1, $s, :e2, :b1, :b2)};
-if = "if" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b {If(:e1, $s, :e2, :b)};
 
-expression = S;
-
-
-
-S = sub | sum | mul | int | rat | inv | div | var;
-sum = ws "(" ws S:l ws "+" ws S:r ws ")" ws {ArSum(:l, :r)};
-mul = ws "(" ws S:l ws "*" ws S:r ws ")" ws {ArMult(:l, :r)};
-sub = ws "(" ws S:l ws "-" ws S:r ws ")" ws {ArSub(:l, :r)};
-rat = ws "(" ws int$n ws "/" ws int$d ws ")" ws {ArRat(s2i($n), s2i($d))};
-div =  ws "(" ws S:l ws "/" ws S:r ws ")" ws {ArDiv(:l, :r)};
-inv = ws "-" S:val ws {ArInv(:val)};
+expression = sub | sum | mul | int | rat | inv | div | var;
+sum = "(" ws expression:l ws "+" ws expression:r ws ")" ws {ArSum(:l, :r)};
+mul = "(" ws expression:l ws "*" ws expression:r ws ")" ws {ArMult(:l, :r)};
+sub = "(" ws expression:l ws "-" ws expression:r ws ")" ws {ArSub(:l, :r)};
+rat = "(" ws int$n ws "/" ws int$d ws ")" ws {ArRat(s2i($n), s2i($d))};
+div = "(" ws expression:l ws "/" ws expression:r ws ")" ws {ArDiv(:l, :r)};
+inv =  "-" expression:val ws {ArInv(:val)};
 
 int = digit+ $s {ArInt(s2i($s))};
 digit = '0'-'9';
@@ -42,4 +34,4 @@ var = letter+ $s {ArVar($s)};
 letter = 'a'-'z';
 condition   = "<" | ">" | "==" | "!=" | "<=" | ">=";
 
-ws = (' ' | '\t' | '\n' | '\r' )*;
+ws = (' ' | '\t' | '\n' | '\r')*;
