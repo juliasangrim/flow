@@ -1,4 +1,4 @@
-var v : int;
+var x : int;
 {
-	print(v);
+	print(x);
 }

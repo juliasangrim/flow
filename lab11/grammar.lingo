@@ -1,21 +1,21 @@
-program = ws declaration*:d body:b {Program(:d, :b)};
-declaration = "var" ws var:v ws ":" ws type:t ";" ws {Declaration(:v, :t)};
+program = ws declaration*:d ws body:b ws {Program(:d, :b)};
+declaration = "var" ws var:v ws ":" ws type:t ws ";" ws {Declaration(:v, :t)};
 
 type = integer | array;
-integer = "int" ws {TypeInt()};
-array = "[" ws type:t "]" ws {TypeArray(:t)};
+integer = ws "int" ws {TypeInt()};
+array = ws "[" ws type:t "]" ws {TypeArray(:t)};
 
-body = choiceExecs | seqExecs | loop | assign | test | print | while ;
+body = assign | test | seqExec | choiceExec| print | while | loop;
 loop = "*" ws body:b {Loop(:b)};
-seqExecs = "{" ws body:b1 ";" ws body:b2 seqExec*:ss "}" ws {SeqExec(:b1, :b2, :ss)};
-seqExec =  ";" ws body;
-choiceExecs = "{" ws body:b1 ws "U" ws body:b2 choiceExec*:ss "}" ws {ChoiceExec(:b1, :b2, :ss)};
-choiceExec = "U" ws body;
+seqExec = "{" ws body:b1 ";" ws body:b2 seqExecs*:ss "}" ws {SeqExec(:b1, :b2, :ss)};
+seqExecs = ";" ws body;
+choiceExec = "{" ws body:b1 ws "U" ws body:b2 choiceExecs*:ss "}" ws {ChoiceExec(:b1, :b2, :ss)};
+choiceExecs = "U" ws body;
 
-assign = var:v ws ":=" ws expression:e ws {Assign(:v, :e)};
-print = "print(" ws expression:e ws ")" ws {Print(:e)};
+assign = ws var:v ws ":=" ws expression:e ws {Assign(:v, :e)};
+print = ws "print(" ws expression:e ws ")" ws {Print(:e)};
 
-test   = "(" ws expression:e1 condition$s ws expression:e2 ")" ws "?" ws {Test(:e1, $s, :e2)};
+test   = ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws "?" ws {Test(:e1, $s, :e2)};
 while  = "while" ws "(" ws expression:e1 condition$s ws expression:e2 ")" ws body:b {While(:e1, $s, :e2, :b)};
 
 expression = sub | sum | mul | int | rat | inv | div | var;
@@ -31,7 +31,7 @@ digit = '0'-'9';
 
 
 var = letter+ $s {ArVar($s)};
-letter = 'a'-'z';
+letter = 'a'-'z' | 'A'-'Z';
 condition   = "<" | ">" | "==" | "!=" | "<=" | ">=";
 
 ws = (' ' | '\t' | '\n' | '\r')*;

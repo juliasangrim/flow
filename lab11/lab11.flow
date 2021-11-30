@@ -7,10 +7,23 @@ import maybe;
 import ds/tuples;
 import math/math;
 
+Program(d : [Declaration], b : Body);
+Body ::= SeqExec, ChoiceExec, Print, Assign, Loop, While, Test;
+
+Declaration(v : ArVar, t : VarType);
 
 VarType ::= TypeInt, TypeArray;
 TypeInt();
 TypeArray(t : VarType);
+
+Print(e : ArExpr);
+Assign(v : ArVar, e : ArExpr);
+Loop(l : Body);
+While(e1 : ArExpr, s : string, e2: ArExpr, b : Body);
+Test(e1 : ArExpr, s : string, e2: ArExpr);
+SeqExec(arg : [Body]);
+ChoiceExec(arg : [Body]);
+
 
 ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
 ArSub(lhs : ArExpr, rhs : ArExpr);
@@ -22,17 +35,6 @@ ArInv(val : ArExpr);
 ArInt(val : int);
 ArVar(val : string);
 
-Body ::= SeqExec, ChoiceExec, Print, Assign, Loop, While, Test;
-Print(e : ArExpr);
-Assign(v : ArVar, e : ArExpr);
-Loop(l : Body);
-While(e1 : ArExpr, s : string, e2: ArExpr, b : Body);
-Test(e1 : ArExpr, s : string, e2: ArExpr);
-SeqExec(body : [Body]);
-ChoiceExec(body : [Body]);
-
-Program(d : [Declaration], b : Body);
-Declaration(v : ArVar, t : VarType);
 
 
 s2ast(str : string) -> Program {
@@ -43,13 +45,23 @@ s2ast(str : string) -> Program {
       SemanticActions(
         mergeTree(defaultPegActions.t,
           pairs2tree([
-            Pair("create SeqExec", \s -> SeqExec(concat3([s[0]], [s[1]], s[2]))),
-            Pair("create ChoiceExec", \s -> ChoiceExec(concat3([s[0]], [s[1]], s[2])))
+            Pair("createSeqExec", \s -> SeqExec(concat3([s[0]], [s[1]], s[2]))),
+            Pair("createChoiceExec", \s -> ChoiceExec(concat3([s[0]], [s[1]], s[2])))
           ])
         )
      )
   )
 }
+
+s2ar(str: string) -> ArExpr {
+    e_gr = "#include D:/repo/flow9/lab11/grammar.lingo";
+    parsic(
+        compilePegGrammar(e_gr),
+        str,
+        SemanticActions(setTree(defaultPegActions.t, "createArInt", \s -> ArInt(s2i(s[0]))))
+    )
+}
+
 
 
 main() {
