@@ -1,4 +1,14 @@
 var x : int;
+var v : [int];
 {
-	print(x);
+	print(v);
+	print(v);
+	x := (x + 1);
+	v := 1;
+	{
+		x := (x + 1) U 
+		x := (x - 1) 
+	};
+	(x < (x + 1)) ?;
+	x := (x + (2 * x))
 }
