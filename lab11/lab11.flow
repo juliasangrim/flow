@@ -1,6 +1,6 @@
 import lingo/pegcode/driver;
 import string;
-import ds/tree;
+import ds/set;
 import fs/filesystem;
 import ds/array;
 import maybe;
@@ -22,7 +22,9 @@ VarType ::= TypeInt, TypeArray;
 TypeInt();
 TypeArray(t : VarType);
 
-ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat;
+ArExpr ::= ArSum, ArMult, ArSub, ArDiv, ArInv, ArInt, ArVar, ArRat, Upd, Get;
+Upd(a : ArExpr, i : ArExpr, value : ArExpr);
+Get(a : ArExpr, i : ArExpr);
 ArSub(lhs : ArExpr, rhs : ArExpr);
 ArSum(lhs : ArExpr, rhs : ArExpr);
 ArMult(lhs : ArExpr, rhs : ArExpr);
@@ -51,9 +53,137 @@ s2ast(str : string) -> Program {
 }
 
 
+typeChecker(prog : Program) -> void {
+  declsCheck = declarationChecker(prog.d);
+  if(declsCheck){
+   // println())
+   // bodyCheacker(prog.d, prog.b)
+  } else {
+
+
+  }
+}
+
+declarationChecker(d : [Declaration]) -> bool {
+   res = fold(d, Some(makeSet()), \setVar, declaration -> {
+    switch (setVar) {
+      Some(set): {
+        if (!containsSet(set, declaration.v)) {
+          Some(insertSet(set, declaration.v));
+        } else {
+          println("Variable " + declaration.v.val + " has another type!");
+          None()
+        }
+      }
+      None(): {
+        None()
+      }
+    }
+  });
+  res ?? true : false;
+}
+
+//Body ::= SeqExec, ChoiceExec, Print, Assign, Loop, While, Test;
+bodyChecker(d : [Declaration], b : Body) -> bool {
+  switch(b) {
+    Assign(v, e): {
+      res = find(d, \decl -> val == decl.v.val);
+      switch(res) {
+        Some(decl): {
+          type = getExprType(d, e);
+          switch(type) {
+            Some(t): {
+
+            }
+            None(): {
+
+            }
+          }
+        }
+        None() : {
+          println("No declaration found for + " + val);
+          None();
+        }
+      }
+    }
+    Test(e1, s, e2): {
+
+    }
+    While(e1, s, e2, b): {
+      
+    }
+    Print(e): {
+
+    }
+    Loop(b) : {
+
+    }
+    SeqExec(body) : {
+      
+    }
+    ChoiceExec(body) : {
+
+    } 
+  }
+}
+
+getExprType(d : [Declaration], expr : ArExpr) -> Maybe<Declaration> {
+  switch (expr) {
+    Get(a,i) : {
+      //add check for index
+      res = getExprType(a, decls);
+      switch(res) : {
+        Some(t) : {
+          switch(t) { 
+            TypeArray(type) : Some(type)
+            TypeInt() : None();
+          }
+        }
+        None() : None();
+      }
+    }
+    Upd(a, i, value) : {
+      //add check for value an index
+      res = getExprType(a, decls);
+      switch(res) : {
+        Some(t) : {
+          switch(t) { 
+            TypeArray(type) : Some(type)
+            TypeInt() : None();
+          }
+        }
+        None() : None();
+      }
+
+    }
+    default: {
+      getExprTypeHadle(d, expr);
+    }
+  }
+}
+
+getExprTypeHandle(d : [Declaration], expr : ArExpr) -> Maybe<Declaration> {
+  switch (expr) {
+    ArVar(val): {
+     res = find(d, \decl -> val == decl.v.val);
+      switch(res) {
+        Some(decl): Some(decl.t);
+        None() : {
+          println("No declaration found for + " + val);
+          None();
+        }
+      }
+   }
+    default : {
+      Some(ArInt())
+    }
+  }
+}
+
 main() {
-	s = getFileContent("D:/repo/flow9/lab11/test1.nm");
+	s = getFileContent("D:/repo/flow9/lab11/test2.nm");
   println(s2ast(s));
+  typeChecker(s2ast(s));
 }
 
 

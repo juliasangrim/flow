@@ -18,7 +18,9 @@ print = ws "print(" ws expression:e ws ")" ws {Print(:e)};
 test   = ws "(" ws expression:e1 ws condition$s ws expression:e2 ")" ws "?" ws {Test(:e1, $s, :e2)};
 while  = ws "while" ws "(" ws expression:e1 ws condition$s ws expression:e2 ws ")" ws body:b ws {While(:e1, $s, :e2, :b)};
 
-expression = sub | sum | mul | int | rat | inv | div | var;
+expression = sub | sum | mul | int | rat | inv | div | get | set | var;
+get = ws "get" ws "(" ws expression:a ws "," ws expression:i ws ")" ws {Get(:a, :i)};
+set = ws "upd" ws "(" ws expression:a ws "," ws expression:i ws "," ws expression:value ws ")" ws {Upd(:a, :i, :value)};
 sum = "(" ws expression:l ws "+" ws expression:r ws ")" ws {ArSum(:l, :r)};
 mul = "(" ws expression:l ws "*" ws expression:r ws ")" ws {ArMult(:l, :r)};
 sub = "(" ws expression:l ws "-" ws expression:r ws ")" ws {ArSub(:l, :r)};
