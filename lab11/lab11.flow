@@ -6,6 +6,7 @@ import ds/array;
 import maybe;
 import ds/tuples;
 import math/math;
+import runtime;
 
 Program(d : [Declaration], b : Body);
 Body ::= SeqExec, ChoiceExec, Print, Assign, Loop, While, Test;
@@ -44,23 +45,35 @@ s2ast(str : string) -> Program {
       SemanticActions(
         mergeTree(defaultPegActions.t,
           pairs2tree([
-            Pair("createSeqExec", \s -> SeqExec(concat([s[0]], [s[1]]))),
-            Pair("createChoiceExec", \s -> ChoiceExec(concat([s[0]], [s[1]])))
+            Pair("createSeqExec", \s -> SeqExec(concat([s[0]], s[1]))),
+            Pair("createChoiceExec", \s -> ChoiceExec(concat([s[0]], s[1])))
           ])
         )
      )
   )
 }
 
+ar2str(expr : ArExpr) -> string {
+	switch (expr) {
+		ArInt(val) : i2s(val);
+		ArSum(lhs, rhs) : concatStrings(["(", ar2str(lhs), " + ", ar2str(rhs), ")"]);
+		ArMult(lhs, rhs) : concatStrings(["(", ar2str(lhs), " * ", ar2str(rhs), ")"]);
+		ArSub(lhs, rhs) : concatStrings(["(", ar2str(lhs), " - ", ar2str(rhs), ")"]);
+		ArInv(val) : concatStrings(["-", ar2str(val)]);
+		ArDiv(lhs, rhs) : concatStrings(["(", ar2str(lhs), " / ", ar2str(rhs), ")"]);
+		ArRat(lhs, rhs) : concatStrings([i2s(lhs), "/", i2s(rhs)]);
+		ArVar(val): val;
+    default: "";
+	}
+}
 
-typeChecker(prog : Program) -> void {
+
+typeChecker(prog : Program) -> bool {
   declsCheck = declarationChecker(prog.d);
   if(declsCheck){
-   // println())
-   // bodyCheacker(prog.d, prog.b)
+   bodyChecker(prog.d, prog.b);
   } else {
-
-
+    false
   }
 }
 
@@ -75,7 +88,7 @@ declarationChecker(d : [Declaration]) -> bool {
           None()
         }
       }
-      None(): {
+      None(): {  
         None()
       }
     }
@@ -84,85 +97,105 @@ declarationChecker(d : [Declaration]) -> bool {
 }
 
 //Body ::= SeqExec, ChoiceExec, Print, Assign, Loop, While, Test;
-bodyChecker(d : [Declaration], b : Body) -> bool {
-  switch(b) {
+bodyChecker(d : [Declaration], body : Body) -> bool {
+  switch(body) {
     Assign(v, e): {
-      res = find(d, \decl -> val == decl.v.val);
+      res = find(d, \decl -> v == decl.v);
       switch(res) {
         Some(decl): {
           type = getExprType(d, e);
           switch(type) {
-            Some(t): {
-
+            Some(exprtype): {
+                if (decl.t == exprtype) {
+                  true;
+                } else {
+                  println("Check assignment to variable " + decl.v.val);
+                  false;
+                }
             }
             None(): {
-
+              println("Attempt to assign void value to variable " + );
+              false;
             }
           }
         }
         None() : {
-          println("No declaration found for + " + val);
-          None();
+          println("No declaration found for + " + v.val);
+          false;
         }
       }
     }
     Test(e1, s, e2): {
-
+      if(getPartExprType(d, e1) != Some(TypeInt())) {
+        println("Wrong left expression in Test: " + ar2str(e1));
+        false
+      } else if(getPartExprType(d, e2) != Some(TypeInt())) {
+        println("Wrong right expression in Test: " + ar2str(e2));
+        false
+      } else {
+        true
+      }        
     }
     While(e1, s, e2, b): {
+       if(getPartExprType(d, e1) != Some(TypeInt())) {
+        println("Wrong left expression in While: " + ar2str(e1));
+        false
+      } else if(getPartExprType(d, e2) != Some(TypeInt())) {
+        println("Wrong right expression in While: " + ar2str(e2));
+        false
+      } else {
+        bodyChecker(d, b);
+      }        
       
     }
     Print(e): {
-
+      if(getExprType(d, e) != Some(TypeInt())) {
+        println("Check argument in print.");
+        false
+      } else {
+        true
+      }
     }
     Loop(b) : {
-
+       bodyChecker(d, b);
     }
-    SeqExec(body) : {
-      
+    SeqExec(bodies) : {
+       all(map(bodies, \b -> bodyChecker(d, b)))
     }
-    ChoiceExec(body) : {
-
+    ChoiceExec(bodies) : {
+      all(map(bodies, \b -> bodyChecker(d, b)))
     } 
   }
 }
 
-getExprType(d : [Declaration], expr : ArExpr) -> Maybe<Declaration> {
+getExprType(d : [Declaration], expr : ArExpr) -> Maybe<VarType> {
   switch (expr) {
     Get(a,i) : {
       //add check for index
-      res = getExprType(a, decls);
-      switch(res) : {
+      res = getExprType(d, a);
+      switch(res) {
         Some(t) : {
-          switch(t) { 
-            TypeArray(type) : Some(type)
-            TypeInt() : None();
-          }
+          Some(t);
         }
         None() : None();
       }
     }
     Upd(a, i, value) : {
-      //add check for value an index
-      res = getExprType(a, decls);
-      switch(res) : {
+     res = getExprType(d, a);
+      switch(res) {
         Some(t) : {
-          switch(t) { 
-            TypeArray(type) : Some(type)
-            TypeInt() : None();
-          }
+          Some(t);
         }
         None() : None();
       }
-
     }
     default: {
-      getExprTypeHadle(d, expr);
+      getPartExprType(d, expr);
     }
   }
 }
 
-getExprTypeHandle(d : [Declaration], expr : ArExpr) -> Maybe<Declaration> {
+getPartExprType(d : [Declaration], expr : ArExpr) -> Maybe<VarType> {
   switch (expr) {
     ArVar(val): {
      res = find(d, \decl -> val == decl.v.val);
@@ -175,15 +208,19 @@ getExprTypeHandle(d : [Declaration], expr : ArExpr) -> Maybe<Declaration> {
       }
    }
     default : {
-      Some(ArInt())
+      Some(TypeInt())
     }
   }
 }
 
 main() {
-	s = getFileContent("D:/repo/flow9/lab11/test2.nm");
+	s = getFileContent("D:/repo/flow9/lab11/test1.nm");
   println(s2ast(s));
-  typeChecker(s2ast(s));
+  if (typeChecker(s2ast(s)) == true) {
+    println("Program is fine.")
+  } else {
+    println("Change program.");
+  }
 }
 
 
